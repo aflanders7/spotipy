@@ -160,6 +160,80 @@ class SpotipyPlaylistApiTest(unittest.TestCase):
         playlist = self.spotify.playlist_items(self.new_playlist['id'])
         self.assertEqual(playlist["total"], 0)
 
+    def test_playlist_reorder_items(self):
+        # test reorder without snapshot id
+        self.spotify.playlist_add_items(
+            self.new_playlist['id'], self.four_tracks)
+
+        pl = self.spotify.playlist_items(self.new_playlist['id'])
+        item1 = pl["items"][0]
+        item2 = pl["items"][1]
+        print(item1, item2)
+
+        self.spotify.playlist_reorder_items(
+            self.new_playlist['id'], 0, 1)
+
+        pl = self.spotify.playlist_items(self.new_playlist['id'])
+        reorder_item2 = pl["items"][0]
+        reorder_item1 = pl["items"][1]
+        print(reorder_item1, reorder_item2)
+
+        self.assertEqual(item1, reorder_item1)
+        self.assertEqual(reorder_item2, item2)
+
+        # test reorder with snapshot id
+        playlist = self.spotify.playlist(self.new_playlist['id'])
+        snapshot_id = playlist['snapshot_id']
+        self.spotify.playlist_reorder_items(
+            self.new_playlist['id'], 0, 1, 1, snapshot_id)
+
+        pl = self.spotify.playlist_items(self.new_playlist['id'])
+        order_item1 = pl["items"][0]
+        order_item2 = pl["items"][1]
+        print(order_item1, order_item2)
+
+        self.assertEqual(order_item1, reorder_item1)
+        self.assertEqual(reorder_item2, order_item2)
+
+    def test_playlist_remove_all_occurrences_of_items(self):
+        # test removal without snapshot id
+        self.spotify.playlist_add_items(
+            self.new_playlist['id'], self.other_tracks)
+        self.spotify.playlist_remove_all_occurrences_of_items(
+            self.new_playlist['id'], self.other_tracks)
+        playlist = self.spotify.playlist_items(self.new_playlist['id'])
+        self.assertEqual(playlist["total"], 0)
+
+        # test removal with snapshot id
+        self.spotify.playlist_add_items(
+            self.new_playlist['id'], self.other_tracks)
+        playlist = self.spotify.playlist(self.new_playlist['id'])
+        snapshot_id = playlist['snapshot_id']
+        self.spotify.playlist_remove_all_occurrences_of_items(
+            self.new_playlist['id'], self.other_tracks, snapshot_id)
+        playlist = self.spotify.playlist_items(self.new_playlist['id'])
+        self.assertEqual(playlist["total"], 0)
+
+    def test_playlist_remove_specific_occurrences_of_items(self):
+        # test removal without snapshot id
+        self.spotify.playlist_add_items(
+            self.new_playlist['id'], self.other_tracks)
+        remove = [{ "uri":"spotify:track:2wySlB6vMzCbQrRnNGOYKa", "positions":[0] }]
+        self.spotify.playlist_remove_specific_occurrences_of_items(
+            self.new_playlist['id'], remove)
+        playlist = self.spotify.playlist_items(self.new_playlist['id'])
+        self.assertEqual(playlist["total"], 2)
+
+        # test removal with snapshot id
+        self.spotify.playlist_add_items(
+            self.new_playlist['id'], ["spotify:track:2wySlB6vMzCbQrRnNGOYKa"])
+        playlist = self.spotify.playlist(self.new_playlist['id'])
+        snapshot_id = playlist['snapshot_id']
+        self.spotify.playlist_remove_specific_occurrences_of_items(
+            self.new_playlist['id'], remove, snapshot_id)
+        playlist = self.spotify.playlist_items(self.new_playlist['id'])
+        self.assertEqual(playlist["total"], 2)
+
     def test_playlist_add_episodes(self):
         # add episodes to playlist
         self.spotify.playlist_add_items(
